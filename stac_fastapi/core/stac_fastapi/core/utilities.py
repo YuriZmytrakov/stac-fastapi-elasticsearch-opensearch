@@ -4,6 +4,7 @@ This module contains functions for transforming geospatial coordinates,
 such as converting bounding boxes to polygon representations.
 """
 
+import copy
 import logging
 import os
 from typing import Any, Dict, List, Optional, Set, Union
@@ -178,3 +179,34 @@ def dict_deep_update(merge_to: Dict[str, Any], merge_from: Dict[str, Any]) -> No
             dict_deep_update(merge_to[k], merge_from[k])
         else:
             merge_to[k] = v
+
+
+def hide_private_data(obj: Any, private_field_names: Union[str, List[str]]) -> Any:
+    """Hide private data fields from the object.
+
+    Args:
+        obj: The object to process (dict, list, or other)
+        private_field_names: A list or single field names to hide from response
+    """
+    obj = copy.deepcopy(obj)
+
+    field_names = (
+        [private_field_names]
+        if isinstance(private_field_names, str)
+        else private_field_names
+    )
+
+    if not field_names:
+        return obj
+
+    if isinstance(obj, dict):
+        for field in field_names:
+            obj.pop(field, None)
+        for value in obj.values():
+            hide_private_data(value, field_names)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            hide_private_data(item, field_names)
+
+    return obj

@@ -10,7 +10,7 @@ from starlette.requests import Request
 
 from stac_fastapi.core.datetime_utils import now_to_rfc3339_str
 from stac_fastapi.core.models.links import CollectionLinks
-from stac_fastapi.core.utilities import get_bool_env
+from stac_fastapi.core.utilities import get_bool_env, hide_private_data
 from stac_fastapi.types import stac as stac_types
 from stac_fastapi.types.links import ItemLinks, resolve_links
 
@@ -108,7 +108,7 @@ class ItemSerializer(Serializer):
         else:
             assets = item.get("assets", {})
 
-        return stac_types.Item(
+        stac_item = stac_types.Item(
             type="Feature",
             stac_version=item.get("stac_version", ""),
             stac_extensions=item.get("stac_extensions", []),
@@ -120,6 +120,12 @@ class ItemSerializer(Serializer):
             links=item_links,
             assets=assets,
         )
+
+        if get_bool_env("HIDE_PRIVATE_DATA"):
+            fields_to_remove = ["private_data"]
+            stac_item = hide_private_data(stac_item, fields_to_remove)
+
+        return stac_item
 
 
 class CollectionSerializer(Serializer):
